@@ -6,11 +6,11 @@ from torchvision.transforms import Compose,ToTensor,Resize
 
 
 class Yaw(Dataset):
-    def __init__(self,root ="Data_Yew",train = True,transform = None):
+    def __init__(self,root ="dataa",train = True,transform = None):
         scipt_path = os.path.dirname(__file__)
         root = os.path.join(scipt_path,root)
 
-        self.categories = ["no_yawn","yawn"]
+        self.categories = ["Normal","Stroke"]
         self.list_img_name = []
         self.lable = []
 
