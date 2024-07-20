@@ -30,12 +30,6 @@ class Yaw(Dataset):
         return len(self.lable)
 
     def __getitem__(self, item):
-        # image = cv2.imread(self.list_img_name[item])
-        # cv2.imshow("img",image)
-        # label = self.lable[item]
-        # print(label)
-        # cv2.waitKey(4243242)
-
         image = cv2.imread(self.list_img_name[item])
         image_path = self.list_img_name[item]
         if image is None:
