@@ -20,14 +20,6 @@ import torchvision.models as models
 warnings.filterwarnings("ignore")
 
 def plot_confusion_matrix(writer, cm, class_names, epoch):
-    """
-    Returns a matplotlib figure containing the plotted confusion matrix.
-
-    Args:
-       cm (array, shape = [n, n]): a confusion matrix of integer classes
-       class_names (array, shape = [n]): String names of the integer classes
-    """
-
     figure = plt.figure(figsize=(20, 20))
     # color map: https://matplotlib.org/stable/gallery/color/colormap_reference.html
     plt.imshow(cm, interpolation='nearest', cmap="plasma")
