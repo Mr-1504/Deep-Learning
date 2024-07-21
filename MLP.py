@@ -7,13 +7,12 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 import matplotlib.pyplot as plt
 
-file_path = '/content/drive/MyDrive/temp/train27303.csv'
+file_path = 'D:/Code/Vigilant-VGG16/train27303.csv'
 time_step = 24
 train_epoch = 100
 batch_size = 32
-training_rate = 0.8
 
-def plot(data, y_test, test_predict, train_size, time_step = time_step):
+def plot(test_data, y_test, test_predict):
     mse = mean_squared_error(y_test, test_predict)
     rmse = np.sqrt(mse)
     r2 = r2_score(y_test, test_predict)
@@ -22,36 +21,36 @@ def plot(data, y_test, test_predict, train_size, time_step = time_step):
     print(f'RMSE: {rmse}')
     print(f'R²: {r2}')
 
-    plt.figure(figsize=(15, 7))
+    plt.figure(figsize=(20, 10))
 
-    start_date = pd.to_datetime('2015-12-23')
-    end_date = pd.to_datetime('2015-12-26')
-    mask = (data['timestamp'] >= start_date) & (data['timestamp'] <= end_date)
-    filtered_data = data.loc[mask]
+    if len(test_data['timestamp']) > len(y_test):
+        test_data = test_data.iloc[:len(y_test)]
 
-    test_indices = np.where(mask.values)[0]
-    filtered_y_test = y_test[test_indices - train_size - time_step + 1]
-    filtered_test_predict = test_predict[test_indices - train_size - time_step + 1]
-
-    plt.plot(filtered_data['timestamp'], filtered_y_test, label='Real Traffic Count', color='red')
-    plt.plot(filtered_data['timestamp'], filtered_test_predict, label='Predicted Traffic Count', color='blue')
+    plt.plot(test_data['timestamp'], y_test, label='Real Traffic Count', color='red')
+    plt.plot(test_data['timestamp'], test_predict, label='Predicted Traffic Count', color='blue')
     plt.xlabel('Time')
     plt.ylabel('Traffic Count')
     plt.title('Traffic Prediction')
     plt.legend()
-    plt.show()
+    plt.savefig('MLP.png')
+    plt.close()
 
-def read_data(file_path):
+def read_data():
     data = pd.read_csv(file_path)
     data['timestamp'] = pd.to_datetime(data['timestamp'])
-    data = data[data['hourly_traffic_count'] != 0]
     data.sort_values('timestamp', inplace=True)
 
-    traffic_data = data['hourly_traffic_count'].values
+    train_data = data[data['timestamp'] < '2015-12-27']
+    test_data = data[(data['timestamp'] >= '2015-12-27') & (data['timestamp'] <= '2015-12-30')]
 
-    scale = MinMaxScaler(feature_range=(0, 1))
-    traffic_data = scale.fit_transform(traffic_data.reshape(-1, 1))
-    return data, traffic_data, scale
+    train_traffic = train_data['hourly_traffic_count'].values.reshape(-1, 1)
+    test_traffic = test_data['hourly_traffic_count'].values.reshape(-1, 1)
+
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    train_scaled = scaler.fit_transform(train_traffic)
+    test_scaled = scaler.transform(test_traffic)
+
+    return test_data, train_scaled, test_scaled, scaler
 
 def create_dataset(dataset, time_step=1):
     X, y = [], []
@@ -61,16 +60,13 @@ def create_dataset(dataset, time_step=1):
         y.append(dataset[i + time_step, 0])
     return np.array(X), np.array(y)
 
-def train(file_path):
-    data, traffic_data, scale = read_data(file_path)
-    X, y = create_dataset(traffic_data, time_step)
+def train():
+    test_data, train_scaled, test_scaled, scaler = read_data()
+    x_train, y_train = create_dataset(train_scaled, time_step)
+    x_test, y_test = create_dataset(test_scaled, time_step)
 
-    train_size = int(len(X) * training_rate)
-    X_train, X_test = X[0:train_size], X[train_size:len(X)]
-    y_train, y_test = y[0:train_size], y[train_size:len(y)]
-
-    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1])
-    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1])
+    x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
+    X_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
 
     model = Sequential()
     model.add(Dense(100, activation='relu', input_shape=(time_step,)))
@@ -78,15 +74,15 @@ def train(file_path):
     model.add(Dense(1))
     model.compile(optimizer='adam', loss='mean_squared_error')
 
-    model.fit(X_train, y_train, epochs=train_epoch, batch_size=batch_size, verbose=1)
+    model.fit(x_train, y_train, epochs=train_epoch, batch_size=batch_size, verbose=1)
 
     test_predict = model.predict(X_test)
 
-    test_predict = scale.inverse_transform(test_predict)
-    y_test = scale.inverse_transform(y_test.reshape(-1, 1))
+    test_predict = scaler.inverse_transform(test_predict)
+    y_test = scaler.inverse_transform(y_test.reshape(-1, 1))
 
-    return data, y_test, test_predict, train_size
+    return test_data, y_test, test_predict
 
 if __name__ == '__main__':
-    data, y_test, test_predict, train_size = train(file_path)
-    plot(data, y_test, test_predict, train_size)
+    test_data, y_test, test_predict = train()
+    plot(test_data, y_test, test_predict)
