@@ -1,16 +1,13 @@
-# RNN
+# SVR
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, r2_score
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import SimpleRNN, Dense
+from sklearn.svm import SVR
 import matplotlib.pyplot as plt
 
 file_path = '/content/drive/MyDrive/temp/train27303.csv'
 time_step = 24
-train_epoch = 100
-batch_size = 32
 training_rate = 0.8
 
 def plot(data, y_test, test_predict, train_size, time_step = time_step):
@@ -69,20 +66,12 @@ def train(file_path):
     X_train, X_test = X[0:train_size], X[train_size:len(X)]
     y_train, y_test = y[0:train_size], y[train_size:len(y)]
 
-    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
-
-    model = Sequential()
-    model.add(SimpleRNN(50, return_sequences=True, input_shape=(time_step, 1)))
-    model.add(SimpleRNN(50, return_sequences=False))
-    model.add(Dense(1))
-    model.compile(optimizer='adam', loss='mean_squared_error')
-
-    model.fit(X_train, y_train, epochs=train_epoch, batch_size=batch_size, verbose=1)
+    model = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=0.1)
+    model.fit(X_train, y_train)
 
     test_predict = model.predict(X_test)
 
-    test_predict = scale.inverse_transform(test_predict)
+    test_predict = scale.inverse_transform(test_predict.reshape(-1, 1))
     y_test = scale.inverse_transform(y_test.reshape(-1, 1))
 
     return data, y_test, test_predict, train_size

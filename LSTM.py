@@ -1,10 +1,10 @@
-# RNN
+# LSTM
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, r2_score
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import SimpleRNN, Dense
+from tensorflow.keras.layers import LSTM, Dense
 import matplotlib.pyplot as plt
 
 file_path = '/content/drive/MyDrive/temp/train27303.csv'
@@ -73,8 +73,8 @@ def train(file_path):
     X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
 
     model = Sequential()
-    model.add(SimpleRNN(50, return_sequences=True, input_shape=(time_step, 1)))
-    model.add(SimpleRNN(50, return_sequences=False))
+    model.add(LSTM(50, return_sequences=True, input_shape=(time_step, 1)))
+    model.add(LSTM(50, return_sequences=False))
     model.add(Dense(1))
     model.compile(optimizer='adam', loss='mean_squared_error')
 
