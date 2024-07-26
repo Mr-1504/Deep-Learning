@@ -1,81 +1,38 @@
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.tree import DecisionTreeRegressor
-import matplotlib.pyplot as plt
-
-file_path = 'D:/Code/Vigilant-VGG16/train27303.csv'
-time_step = 24
+import os
+import random
+import shutil
 
 
-def plot(test_data, y_test, test_predict):
-    mse = mean_squared_error(y_test, test_predict)
-    rmse = np.sqrt(mse)
-    r2 = r2_score(y_test, test_predict)
+def get_random_files_from_directory(source_directory, destination_directory, number_of_files):
+    # Lấy danh sách tất cả các tệp tin trong thư mục nguồn
+    all_files = [os.path.join(source_directory, f) for f in os.listdir(source_directory) if
+                 os.path.isfile(os.path.join(source_directory, f))]
 
-    print(f'MSE: {mse}')
-    print(f'RMSE: {rmse}')
-    print(f'R²: {r2}')
+    # Kiểm tra nếu số lượng tệp tin ít hơn số lượng yêu cầu
+    if len(all_files) < number_of_files:
+        raise ValueError("Số lượng tệp tin trong thư mục ít hơn số lượng yêu cầu.")
 
-    plt.figure(figsize=(20, 10))
+    # Lấy ngẫu nhiên số lượng tệp tin được yêu cầu
+    random_files = random.sample(all_files, number_of_files)
 
-    if len(test_data['timestamp']) > len(y_test):
-        test_data = test_data.iloc[:len(y_test)]
+    # Đảm bảo thư mục đích tồn tại, nếu không thì tạo mới
+    if not os.path.exists(destination_directory):
+        os.makedirs(destination_directory)
 
-    plt.plot(test_data['timestamp'], y_test, label='Real Traffic Count', color='red')
-    plt.plot(test_data['timestamp'], test_predict, label='Predicted Traffic Count', color='blue')
-    plt.xlabel('Time')
-    plt.ylabel('Traffic Count')
-    plt.title('Traffic Prediction')
-    plt.legend()
-    plt.savefig('decisionTree.png')
-    plt.close()
+    # Sao chép các tệp tin được chọn vào thư mục đích
+    for file in random_files:
+        shutil.copy(file, destination_directory)
 
-
-def read_data():
-    data = pd.read_csv(file_path)
-    data['timestamp'] = pd.to_datetime(data['timestamp'])
-    data.sort_values('timestamp', inplace=True)
-
-    train_data = data[data['timestamp'] < '2015-12-27']
-    test_data = data[(data['timestamp'] >= '2015-12-27') & (data['timestamp'] <= '2015-12-30')]
-
-    train_traffic = train_data['hourly_traffic_count'].values.reshape(-1, 1)
-    test_traffic = test_data['hourly_traffic_count'].values.reshape(-1, 1)
-
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    train_scaled = scaler.fit_transform(train_traffic)
-    test_scaled = scaler.transform(test_traffic)
-
-    return test_data, train_scaled, test_scaled, scaler
+    return random_files
 
 
-def create_dataset(dataset, time_step=1):
-    x, y = [], []
-    for i in range(len(dataset) - time_step):
-        a = dataset[i:(i + time_step), 0]
-        x.append(a)
-        y.append(dataset[i + time_step, 0])
-    return np.array(x), np.array(y)
+# Ví dụ sử dụng
+source_directory = 'D:\\Code\\Vigilant-VGG16\\Brain\\resoucre\\data\\Normal'
+destination_directory = 'D:\\user\\Desktop\\temp'
+number_of_files = 950
 
-
-def train():
-    test_data, train_scaled, test_scaled, scaler = read_data()
-    x_train, y_train = create_dataset(train_scaled, time_step)
-    x_test, y_test = create_dataset(test_scaled, time_step)
-
-    model = DecisionTreeRegressor()
-    model.fit(x_train, y_train)
-
-    test_predict = model.predict(x_test)
-
-    test_predict = scaler.inverse_transform(test_predict.reshape(-1, 1))
-    y_test = scaler.inverse_transform(y_test.reshape(-1, 1))
-
-    return test_data, y_test, test_predict
-
-
-if __name__ == '__main__':
-    test_data, y_test, test_predict = train()
-    plot(test_data, y_test, test_predict)
+try:
+    random_files = get_random_files_from_directory(source_directory, destination_directory, number_of_files)
+    print(f"Đã sao chép {len(random_files)} tệp tin vào thư mục {destination_directory}")
+except ValueError as e:
+    print(e)
